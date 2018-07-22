@@ -1,0 +1,31 @@
+---
+title: "README"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Data Exploration and Machine Learning app using R Shiny
+
+I am sharing the app related to Data Exploration and machine learning. Features includes:Data Exploration, Running Models, Finding important Variable, Comparison of the Model and Choosing the best Model to predict.
+
+In the next version I will include features to deal with missing values, outliers and transformations. Hope it helps.
+
+Keep using and let me know your suggestion and issues/bugs you are facing.
+
+http://suryaprakash.shinyapps.io/Data_Exploration
+
+
+
+# Code
+
+Hi Team,
+
+Here with I am sharing the code for the code. Due to some project work I was not able to improve it further. Kindly improve the app with adding new features which will help everyone.
+
+There could be loop holes in the current project which can be fixed and optimized the code as well.
+
+https://gist.github.com/Surya1987/d0f91c892e8f0bbfb225d21d10e46e89
