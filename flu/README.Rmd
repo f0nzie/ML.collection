@@ -1,0 +1,23 @@
+---
+title: "README"
+output: html_notebook
+---
+
+
+# The data
+
+The data comes from the package `outbreaks`.
+
+The dataset contains case ID, date of onset, date of hospitalisation, date of outcome, gender, age, province and of course outcome: Death or Recovery.
+
+```{r echo = TRUE, message = FALSE, warning = FALSE, cache=FALSE, fig.width = 6, fig.height = 5, fig.align = "center"}
+options(width = 1000)
+
+if (!require("outbreaks")) install.packages("outbreaks")
+library(outbreaks)
+fluH7N9.china.2013_backup <- fluH7N9_china_2013
+
+fluH7N9_china_2013$age[which(fluH7N9_china_2013$age == "?")] <- NA
+fluH7N9_china_2013$case.ID <- paste("case", fluH7N9_china_2013$case.ID, sep = "_")
+head(fluH7N9_china_2013)
+```
