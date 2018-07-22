@@ -1,0 +1,60 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+# maintenance data from Kaggle
+maintenance <- read_delim("maintenance_data.csv", delim = ";")
+```
+
+```{r}
+# time series forecast
+
+# invent dates for demonstration purpose
+maintenance_prophet <- maintenance %>%
+ as.data.frame() %>%
+    mutate(ds = as.Date(lifetime, origin = "2015-01-01")) %>%
+    select(ds, pressureInd, moistureInd, temperatureInd) %>% 
+    mutate(y = pressureInd)
+
+head(maintenance_prophet)
+```
+
+
+We call the `prophet` function to fit the model.  The first argument is the historical dataframe.  Additional arguments control how Prophet fits the data.
+
+
+```{r}
+# for every cont. feature do forecast and combine into new dataframe prophet_df
+m <- prophet(maintenance_prophet)
+future <- make_future_dataframe(m, periods = 30)
+tibble::as.tibble(future)
+```
+
+```{r}
+forecast <- predict(m, future)
+tibble::as.tibble(forecast)
+```
+
+You can use the generic `plot` function to plot the forecast, but you must also pass the model in to be plotted:
+
+```{r}
+plot(m, forecast)
+```
+
+You can plot the components of the forecast using the `prophet_plot_components` function:
+
+```{r}
+prophet_plot_components(m, forecast)
+```
+
+
+```{r}
+prophet_df <- maintenance_prophet %>% 
+    unique %>% 
+    print
+```
+
+

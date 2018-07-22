@@ -1,0 +1,15 @@
+---
+title: "README"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+Article
+
+https://blog.codecentric.de/en/2017/11/explore-predictive-maintenance-flexdashboard/
+

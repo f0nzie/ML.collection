@@ -1,0 +1,145 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+# maintenance data from Kaggle
+maintenance <- read_delim("maintenance_data.csv", delim = ";")
+```
+
+```{r}
+# used for modeling
+library(h2o)
+h2o.init(nthreads = -1, max_mem_size = "512m")
+library(prophet)
+# h2o
+maintenance_hf <- as.h2o(maintenance)
+```
+
+```{r}
+splits <- h2o.splitFrame(maintenance_hf,
+                         ratios = c(0.7, 0.15),
+                         seed = 42)
+
+train  <- splits[[1]]
+valid <- splits[[2]]
+test <- splits[[3]]
+```
+
+```{r}
+# response variable = class label
+y <- "broken"
+reponse_id <-  which(colnames(maintenance) == y) # column number with class
+
+# features
+x <- setdiff(colnames(maintenance), y)
+```
+
+
+```{r}
+# ML model
+aml <- h2o.automl(x = x,
+                 y = y,
+                 training_frame = train,
+                 validation_frame = valid,
+                 leaderboard_frame = test,
+                 max_runtime_secs = 100,
+                 seed = 42)
+h2o.saveModel(aml@leader, path = "aml_leader")
+
+```
+
+```{r}
+aml_leader <- h2o.loadModel(path = file.path("aml_leader",
+                                "StackedEnsemble_AllModels_0_AutoML_20180715_163425"))
+```
+
+```{r}
+# predict test data
+pred <- h2o.predict(aml_leader, test)
+pred <- as.data.frame(pred)
+save(pred, file = "pred.RData")
+```
+
+
+
+```{r}
+library(dplyr)
+library(tibble)
+
+# performance
+perf <- h2o.performance(aml_leader, test)
+perf <- data.frame(algorithm = perf@algorithm,
+          MSE = perf@metrics$MSE,
+          RMSE = perf@metrics$RMSE,
+          mean_residual_deviance = perf@metrics$mean_residual_deviance,
+          AIC = perf@metrics$AIC) %>%
+ t() %>%
+ as.data.frame() %>%
+ rownames_to_column() %>%
+ rename(metric = rowname,
+        value = V1)
+save(perf, file = "perf.RData")
+```
+
+
+```{r}
+# train & test data
+train <- as.data.frame(train)
+test <- as.data.frame(test)
+save(train, file = "train.RData")
+save(test, file = "test.RData")
+```
+
+```{r}
+# ROC curve
+roc_pred <- prediction(as.vector(pred[, 1]), as.vector(test$broken))
+perf_2 <- performance(roc_pred, "tpr", "fpr")
+
+# sensitivity/specifcity curve
+perf_3 <- performance(roc_pred, "sens", "spec")
+
+# find optimal cutoff
+df <- data.frame(cut = perf_3@alpha.values[[1]], 
+                 sens = perf_3@x.values[[1]], 
+                 spec = perf_3@y.values[[1]])
+max <- df[which.max(df$sens + df$spec), ]
+cutoff <- as.numeric(max$cut)
+
+```
+
+
+```{r}
+library(prophet)
+# time series forecast
+
+# invent dates for demonstration purpose
+maintenance_prophet <- maintenance %>%
+ as.data.frame() %>%
+    mutate(ds = as.Date(lifetime, origin = "2015-01-01")) %>%
+    select(ds, pressureInd, moistureInd, temperatureInd) %>% 
+    mutate(y = pressureInd)
+
+# for every cont. feature do forecast and combine into new dataframe prophet_df
+m <- prophet(maintenance_prophet)
+future <- make_future_dataframe(m, periods = 30)
+forecast <- predict(m, future)
+
+prophet_df <- maintenance_prophet[sample(nrow(maintenance_prophet), 120), ]
+test_df <- test
+
+# add fake lifetime variable for demonstration purpose
+prophet_df <- prophet_df %>%
+ unique() %>%
+ mutate(lifetime = train$lifetime[1:120] + 2)
+
+# predict future based on forecast
+prophet_df_hf <- as.h2o(prophet_df[, -1])
+pred <- h2o.predict(aml_leader, prophet_df_hf)
+predict_future <- data.frame(pred = as.vector(pred[, 1])) %>%
+mutate(pred_class = ifelse(pred > cutoff, "1", "0"))
+save(predict_future, file = "predict_future.RData")
+```
+
