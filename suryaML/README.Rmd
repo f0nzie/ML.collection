@@ -7,6 +7,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Info
+
+* Requires external CSV files for modeling
+* caret
+* shinydashboard
+
 
 # Data Exploration and Machine Learning app using R Shiny
 
