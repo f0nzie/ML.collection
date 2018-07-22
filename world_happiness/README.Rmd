@@ -1,0 +1,10 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+LIME:  local interpretable model-agnostic explanations
+
+https://github.com/marcotcr/lime
+
